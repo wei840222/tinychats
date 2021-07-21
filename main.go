@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -26,11 +28,15 @@ import (
 func main() {
 	log := zapLogger()
 
-	host := flag.String("host", "", "server listening host")
-	port := flag.Int("port", 8080, "server listening port")
+	var port int
+	flag.IntVar(&port, "port", 8080, "server listening port")
 	flag.Parse()
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *host, *port))
+	if envPort := os.Getenv("PORT"); port == 8080 && envPort != "" {
+		port, _ = strconv.Atoi(envPort)
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -81,6 +87,7 @@ func main() {
 	go httpS.Serve(httpL)
 	go grpcS.Serve(grpcL)
 
+	log.Sugar().Infof("server start and listen on %s", lis.Addr().String())
 	if err := cm.Serve(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err.Error())
 	}
