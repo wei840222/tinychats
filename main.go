@@ -12,7 +12,6 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 
@@ -21,6 +20,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/lib/pq"
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -105,12 +105,11 @@ func main() {
 		}
 		db = sqliteDB
 	} else {
-		dbURL, err := url.Parse(databaseURL)
+		dsn, err := pq.ParseURL(databaseURL)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		dbPassword, _ := dbURL.User.Password()
-		postgresDB, err := gorm.Open(postgres.Open(fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC", dbURL.Host, dbURL.User.Username(), dbPassword, dbURL.Path, dbURL.Port())), &gorm.Config{})
+		postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			log.Fatal(err.Error())
 		}
