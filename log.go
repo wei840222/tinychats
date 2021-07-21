@@ -15,13 +15,13 @@ var (
 func zapLogger() *zap.Logger {
 	loggerInit.Do(func() {
 		l, err := zap.Config{
-			Level:       zap.NewAtomicLevelAt(zap.DebugLevel),
+			Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
 			Development: false,
 			Sampling: &zap.SamplingConfig{
 				Initial:    100,
 				Thereafter: 100,
 			},
-			Encoding: "console",
+			Encoding: "json",
 			EncoderConfig: zapcore.EncoderConfig{
 				TimeKey:        "time",
 				LevelKey:       "level",
@@ -31,7 +31,7 @@ func zapLogger() *zap.Logger {
 				MessageKey:     "message",
 				StacktraceKey:  "stacktrace",
 				LineEnding:     zapcore.DefaultLineEnding,
-				EncodeLevel:    zapcore.CapitalColorLevelEncoder,
+				EncodeLevel:    zapcore.LowercaseLevelEncoder,
 				EncodeTime:     zapcore.RFC3339TimeEncoder,
 				EncodeDuration: zapcore.MillisDurationEncoder,
 				EncodeCaller:   zapcore.ShortCallerEncoder,
