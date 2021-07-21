@@ -15,7 +15,7 @@ var (
 func zapLogger() *zap.Logger {
 	loggerInit.Do(func() {
 		l, err := zap.Config{
-			Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
+			Level:       zap.NewAtomicLevelAt(zap.DebugLevel),
 			Development: false,
 			Sampling: &zap.SamplingConfig{
 				Initial:    100,

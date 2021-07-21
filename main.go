@@ -22,6 +22,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/lib/pq"
 	"github.com/soheilhy/cmux"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -29,6 +30,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	gorm_logger "gorm.io/gorm/logger"
+	"moul.io/zapgorm2"
 )
 
 //go:embed web
@@ -97,9 +100,12 @@ func main() {
 		),
 	)
 
+	gormLogger := zapgorm2.New(log.With(zap.String("system", "gorm")))
+	gormLogger.SetAsDefault()
+	gormLogger.LogLevel = gorm_logger.Info
 	var db *gorm.DB
 	if databaseURL == "" {
-		sqliteDB, err := gorm.Open(sqlite.Open("sqlite.db"), &gorm.Config{})
+		sqliteDB, err := gorm.Open(sqlite.Open("sqlite.db"), &gorm.Config{Logger: gormLogger})
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -109,7 +115,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: gormLogger})
 		if err != nil {
 			log.Fatal(err.Error())
 		}
