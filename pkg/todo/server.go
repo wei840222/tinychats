@@ -8,12 +8,14 @@ import (
 
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"gorm.io/gorm"
 )
 
 type Server struct {
 	proto.UnimplementedTodoServer
 	sync.RWMutex
 	todos []*proto.TodoResponse
+	DB    *gorm.DB
 }
 
 func (s *Server) ListTodos(_ context.Context, _ *emptypb.Empty) (*proto.ListTodoResponse, error) {

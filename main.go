@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -25,6 +26,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 //go:embed web
@@ -34,11 +38,16 @@ func main() {
 	log := zapLogger()
 
 	var port int
+	var databaseURL string
 	flag.IntVar(&port, "port", 8080, "server listening port")
+	flag.StringVar(&databaseURL, "databaseUrl", "", "database url (ex: postgres://username:password@localhost:5432/todo)")
 	flag.Parse()
 
 	if envPort := os.Getenv("PORT"); port == 8080 && envPort != "" {
 		port, _ = strconv.Atoi(envPort)
+	}
+	if databaseURL == "" {
+		databaseURL = os.Getenv("DATABASE_URL")
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -87,7 +96,28 @@ func main() {
 			grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 		),
 	)
-	proto.RegisterTodoServer(grpcS, &todo.Server{})
+
+	var db *gorm.DB
+	if databaseURL == "" {
+		sqliteDB, err := gorm.Open(sqlite.Open("sqlite.db"), &gorm.Config{})
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		db = sqliteDB
+	} else {
+		dbURL, err := url.Parse(databaseURL)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		dbPassword, _ := dbURL.User.Password()
+		postgresDB, err := gorm.Open(postgres.Open(fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC", dbURL.Host, dbURL.User.Username(), dbPassword, dbURL.Path, dbURL.Port())), &gorm.Config{})
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		db = postgresDB
+	}
+
+	proto.RegisterTodoServer(grpcS, &todo.Server{DB: db})
 	reflection.Register(grpcS)
 
 	cm := cmux.New(lis)
