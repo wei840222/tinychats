@@ -116,7 +116,12 @@ func main() {
 		db = postgresDB
 	}
 
-	proto.RegisterTodoServer(grpcS, &todo.Server{DB: db})
+	todoS, err := todo.NewServer(db)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	proto.RegisterTodoServer(grpcS, todoS)
+
 	reflection.Register(grpcS)
 
 	cm := cmux.New(lis)
