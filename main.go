@@ -6,8 +6,10 @@ import (
 	"github.com/wei840222/todo/pkg/todo"
 	"github.com/wei840222/todo/proto"
 
+	"embed"
 	"flag"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -24,6 +26,9 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
+
+//go:embed web
+var web embed.FS
 
 func main() {
 	log := zapLogger()
@@ -46,7 +51,12 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	public, err := fs.Sub(web, "web")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	m := http.NewServeMux()
+	m.Handle("/", http.FileServer(http.FS(public)))
 	m.Handle("/playground", playground.Handler("GraphQL Playground", "/graphql"))
 	m.Handle("/graphql", handler.NewDefaultServer(
 		generated.NewExecutableSchema(
