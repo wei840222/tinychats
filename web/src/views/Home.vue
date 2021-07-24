@@ -1,19 +1,19 @@
 <template lang="pug">
 van-loading(v-if="currentUserLoading || listMessagesLoading ", style="text-align: center; margin-top: 10px") Loading...
 van-cell(v-else, v-for="(msg, i) in messages", :key="msg.id", :title="msg.text")
-van-field(v-model="createMessageState")
+van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id", :title="msg.text")
+van-field.fixedbutton(v-model="createMessageState")
   template(#button)
-    van-button(size="small", :loading="createMessageLoading" @click="createMessage") add
+    van-button(size="small", :loading="createMessageLoading" @click="createMessage") send
 </template>
 
 <script>
-import { ref, watch, inject } from "vue";
+import { ref, watch } from "vue";
 import {
   useQuery,
   useResult,
   useMutation,
   useSubscription,
-  DefaultApolloClient,
 } from "@vue/apollo-composable";
 import gql from "graphql-tag";
 
@@ -79,6 +79,7 @@ export default {
     const { result: listMessages, loading: listMessagesLoading } =
       useQuery(LIST_MESSAGES);
     const messages = useResult(listMessages, [], (data) => data.messages);
+    const messagesCreated = ref([]);
     const createMessageState = ref("");
 
     const {
@@ -94,21 +95,14 @@ export default {
 
     const { result: onMessageCreated } = useSubscription(ON_MESSAGECREATED);
 
-    const apolloClient = inject(DefaultApolloClient);
-
     watch(
       onMessageCreated,
       (data) => {
         console.log(data.messageCreated);
-        let cacheData = apolloClient.cache.readQuery({
-          query: LIST_MESSAGES,
-        });
-        cacheData = JSON.parse(JSON.stringify(cacheData));
-        cacheData.messages.push(
+        messagesCreated.value.push(
           JSON.parse(JSON.stringify(data.messageCreated))
         );
-        console.log(cacheData);
-        apolloClient.cache.writeQuery({ query: LIST_MESSAGES, cacheData });
+        console.log(messagesCreated.value);
       },
       {
         lazy: true,
@@ -119,6 +113,7 @@ export default {
       currentUserLoading,
       listMessagesLoading,
       messages,
+      messagesCreated,
       createMessageState,
       createMessage,
       createMessageLoading,
@@ -126,3 +121,10 @@ export default {
   },
 };
 </script>
+
+<style lang="sass" scoped>
+.fixedbutton
+    position: fixed
+    bottom: 0px
+    right: 0px
+</style>
