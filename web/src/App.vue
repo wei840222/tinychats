@@ -4,6 +4,7 @@ router-view
 
 <script>
 import { provide, computed } from "vue";
+import { useRouter } from "vue-router";
 import {
   ApolloClient,
   ApolloLink,
@@ -21,10 +22,13 @@ import liff from "@line/liff";
 
 export default {
   setup() {
+    const router = useRouter();
     if (process.env.NODE_ENV === "production") {
       liff.init({ liffId: "1656247924-eX5ZOvN0" }).then(() => {
         if (!liff.isLoggedIn()) {
           liff.login();
+        } else {
+          router.go();
         }
       });
     }
