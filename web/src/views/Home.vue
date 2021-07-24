@@ -2,6 +2,7 @@
 van-loading(v-if="currentUserLoading || listMessagesLoading ", style="text-align: center; margin-top: 10px") Loading...
 van-cell(v-else, v-for="(msg, i) in messages", :key="msg.id", :title="msg.text")
 van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id", :title="msg.text")
+#message-end
 van-field.fixedbutton(v-model="createMessageState")
   template(#button)
     van-button(size="small", :loading="createMessageLoading" @click="createMessage") send
@@ -16,6 +17,7 @@ import {
   useSubscription,
 } from "@vue/apollo-composable";
 import gql from "graphql-tag";
+import jump from "jump.js";
 
 const CURRENT_USER = gql`
   query currentUser {
@@ -76,8 +78,11 @@ export default {
   name: "Home",
   setup() {
     const { loading: currentUserLoading } = useQuery(CURRENT_USER);
-    const { result: listMessages, loading: listMessagesLoading } =
-      useQuery(LIST_MESSAGES);
+    const {
+      result: listMessages,
+      loading: listMessagesLoading,
+      onResult: onListMessages,
+    } = useQuery(LIST_MESSAGES);
     const messages = useResult(listMessages, [], (data) => data.messages);
     const messagesCreated = ref([]);
     const createMessageState = ref("");
@@ -101,15 +106,14 @@ export default {
         messagesCreated.value.push(
           JSON.parse(JSON.stringify(data.messageCreated))
         );
-        window.scrollTo(
-          0,
-          document.body.scrollHeight || document.documentElement.scrollHeight
-        );
+        jump("#message-end");
       },
       {
         lazy: true,
       }
     );
+
+    onListMessages(() => jump(window.innerHeight));
 
     return {
       currentUserLoading,
