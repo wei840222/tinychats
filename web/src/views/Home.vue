@@ -7,8 +7,14 @@ van-field(v-model="createMessageState")
 </template>
 
 <script>
-import { ref } from "vue";
-import { useQuery, useResult, useMutation } from "@vue/apollo-composable";
+import { ref, watch, inject } from "vue";
+import {
+  useQuery,
+  useResult,
+  useMutation,
+  useSubscription,
+  DefaultApolloClient,
+} from "@vue/apollo-composable";
 import gql from "graphql-tag";
 
 const CURRENT_USER = gql`
@@ -70,11 +76,8 @@ export default {
   name: "Home",
   setup() {
     const { loading: currentUserLoading } = useQuery(CURRENT_USER);
-    const {
-      result: listMessages,
-      loading: listMessagesLoading,
-      subscribeToMore: onMessageCreated,
-    } = useQuery(LIST_MESSAGES);
+    const { result: listMessages, loading: listMessagesLoading } =
+      useQuery(LIST_MESSAGES);
     const messages = useResult(listMessages, [], (data) => data.messages);
     const createMessageState = ref("");
 
@@ -89,14 +92,26 @@ export default {
     }));
     onCreateMessageDone(() => (createMessageState.value = ""));
 
-    onMessageCreated(() => ({
-      document: ON_MESSAGECREATED,
-      updateQuery: (previousResult, { subscriptionData }) => {
-        console.log(subscriptionData.data.messageCreated);
-        previousResult.messages.push(subscriptionData.data.messageCreated);
-        return previousResult;
+    const { result: onMessageCreated } = useSubscription(ON_MESSAGECREATED);
+
+    const apolloClient = inject(DefaultApolloClient);
+
+    watch(
+      onMessageCreated,
+      (data) => {
+        console.log(data);
+        let cacheData = apolloClient.cache.readQuery({
+          query: LIST_MESSAGES,
+        });
+        cacheData = JSON.parse(JSON.stringify(cacheData));
+        console.log(cacheData);
+        cacheData.messages.push(data);
+        apolloClient.cache.writeQuery({ query: LIST_MESSAGES, cacheData });
       },
-    }));
+      {
+        lazy: true,
+      }
+    );
 
     return {
       currentUserLoading,
