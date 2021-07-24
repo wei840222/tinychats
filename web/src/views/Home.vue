@@ -128,6 +128,7 @@ export default {
       ImagePreview({
         images: [url],
         closeable: true,
+        showIndex: false,
       });
 
     return {
