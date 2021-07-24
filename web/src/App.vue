@@ -14,14 +14,21 @@ import {
   createHttpLink,
   InMemoryCache,
 } from "@apollo/client/core";
+import { createPersistedQueryLink } from "@apollo/client/link/persisted-queries";
+import { sha256 } from "crypto-hash";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 
 export default {
   setup() {
     const apolloClient = new ApolloClient({
-      link: createHttpLink({
-        uri: "https://wei840222-todo.herokuapp.com/graphql",
-      }),
+      link: createPersistedQueryLink({
+        useGETForHashedQueries: true,
+        sha256,
+      }).concat(
+        createHttpLink({
+          uri: "https://wei840222-todo.herokuapp.com/graphql",
+        })
+      ),
       cache: new InMemoryCache(),
     });
     provide(DefaultApolloClient, apolloClient);
