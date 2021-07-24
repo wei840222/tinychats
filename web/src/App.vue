@@ -7,6 +7,28 @@
 router-view
 </template>
 
+<script>
+import { provide } from "vue";
+import {
+  ApolloClient,
+  createHttpLink,
+  InMemoryCache,
+} from "@apollo/client/core";
+import { DefaultApolloClient } from "@vue/apollo-composable";
+
+export default {
+  setup() {
+    const apolloClient = new ApolloClient({
+      link: createHttpLink({
+        uri: "https://wei840222-todo.herokuapp.com/graphql",
+      }),
+      cache: new InMemoryCache(),
+    });
+    provide(DefaultApolloClient, apolloClient);
+  },
+};
+</script>
+
 <style lang="sass">
 #app
   font-family: Avenir, Helvetica, Arial, sans-serif
