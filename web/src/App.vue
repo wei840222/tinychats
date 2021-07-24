@@ -1,5 +1,4 @@
 <template lang="pug">
-van-nav-bar(title="Todos")
 router-view
 </template>
 
