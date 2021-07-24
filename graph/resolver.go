@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -78,15 +79,25 @@ func newGraphQDataloadersMiddleware(userClient proto.UserClient) pkg.Middleware 
 						if err != nil {
 							return nil, []error{err}
 						}
-						var users []*model.User
+						userResponseMap := make(map[string]*proto.UserResponse)
 						for _, userResponse := range res.GetUsers() {
+							userResponseMap[userResponse.GetId()] = userResponse
+						}
+						var users []*model.User
+						var errors []error
+						for _, id := range ids {
+							userResponse, ok := userResponseMap[id]
+							if !ok {
+								errors = append(errors, fmt.Errorf("user: %s not fount", id))
+								continue
+							}
 							users = append(users, &model.User{
 								ID:        userResponse.GetId(),
 								Name:      userResponse.GetName(),
 								AvatarURL: pointer.ToStringOrNil(userResponse.GetAvatarUrl()),
 							})
 						}
-						return users, nil
+						return users, errors
 					},
 					Wait:     2 * time.Millisecond,
 					MaxBatch: 100,
