@@ -99,13 +99,13 @@ export default {
     watch(
       onMessageCreated,
       (data) => {
-        console.log(data);
+        console.log(data.messageCreated);
         let cacheData = apolloClient.cache.readQuery({
           query: LIST_MESSAGES,
         });
         cacheData = JSON.parse(JSON.stringify(cacheData));
         console.log(cacheData);
-        cacheData.messages.push(data);
+        cacheData.messages.push(data.messageCreated);
         apolloClient.cache.writeQuery({ query: LIST_MESSAGES, cacheData });
       },
       {
