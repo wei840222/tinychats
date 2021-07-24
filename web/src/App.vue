@@ -3,7 +3,7 @@ router-view
 </template>
 
 <script>
-import { provide, onBeforeMount } from "vue";
+import { provide, computed } from "vue";
 import {
   ApolloClient,
   ApolloLink,
@@ -18,16 +18,26 @@ import liff from "@line/liff";
 
 export default {
   setup() {
+    if (process.env.NODE_ENV === "production") {
+      liff.init({ liffId: "1656247924-eX5ZOvN0" }).then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        }
+      });
+    }
+
+    const accessToken = computed(() => {
+      if (process.env.NODE_ENV !== "production") {
+        return process.env.VUE_APP_ACCESS_TOKEN;
+      }
+      return liff.isLoggedIn() ? liff.getAccessToken() : null;
+    });
+
     const authMiddleware = new ApolloLink((operation, forward) => {
       operation.setContext(({ headers = {} }) => ({
         headers: {
           ...headers,
-          Authorization: (() => {
-            if (process.env.NODE_ENV !== "production") {
-              return process.env.VUE_APP_ACCESS_TOKEN;
-            }
-            return liff.isLoggedIn() ? liff.getAccessToken() : null;
-          })(),
+          Authorization: accessToken.value,
         },
       }));
       return forward(operation);
@@ -46,17 +56,8 @@ export default {
       ]),
       cache: new InMemoryCache(),
     });
-    provide(DefaultApolloClient, apolloClient);
 
-    onBeforeMount(async () => {
-      if (process.env.NODE_ENV !== "production") {
-        return;
-      }
-      await liff.init({ liffId: "1656247924-eX5ZOvN0" });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-      }
-    });
+    provide(DefaultApolloClient, apolloClient);
   },
 };
 </script>
