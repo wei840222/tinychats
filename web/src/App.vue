@@ -1,7 +1,9 @@
 <template lang="pug">
 #nav
-  router-link(to="/") Home
-  router-link(to="/about") About
+  router-link(to="/")
+    van-button Home
+  router-link(to="/about") 
+    van-button About
 router-view
 </template>
 
