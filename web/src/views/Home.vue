@@ -3,12 +3,12 @@ van-loading(v-if="currentUserLoading || listMessagesLoading ", style="text-align
 van-cell(v-else, v-for="(msg, i) in messages", :key="msg.id")
   template(#title)
     van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round @click="onImageClicked(msg.user.avatarUrl)")
-    van-tag(plain type="success" style="margin-left: 5px;") {{ msg.user.name }}
+    van-tag(plain type="success" style="margin-left: 5px; padding-top: 1px;") {{ msg.user.name }}
   | {{ msg.text }}
 van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id")
   template(#title)
     van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round @click="onImageClicked(msg.user.avatarUrl)")
-    van-tag(plain type="success" style="margin-left: 5px;") {{ msg.user.name }}
+    van-tag(plain type="success" style="margin-left: 5px; padding-top: 1px;") {{ msg.user.name }}
   | {{ msg.text }}
 #message-end(style="margin-bottom: 60px;")
 van-field.fixedbutton(v-model="createMessageState" size="small" placeholder="please input message")
