@@ -1,8 +1,8 @@
 package graph
 
 import (
-	"github.com/wei840222/todo/proto"
-
+	"github.com/wei840222/tinychats/graph/model"
+	"github.com/wei840222/tinychats/proto"
 	"go.uber.org/zap"
 )
 
@@ -11,6 +11,9 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Logger     *zap.Logger
-	TodoClient proto.TodoClient
+	Logger        *zap.Logger
+	UserClient    proto.UserClient
+	MessageClient proto.MessageClient
+
+	MessageCreatedChan chan *model.Message
 }

@@ -1,12 +1,13 @@
-module github.com/wei840222/todo
+module github.com/wei840222/tinychats
 
 // +heroku goVersion go1.16
 go 1.16
 
 require (
 	github.com/99designs/gqlgen v0.13.0
-	github.com/google/uuid v1.1.2
+	github.com/AlekSi/pointer v1.1.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/kkdai/line-login-sdk-go v0.6.1
 	github.com/lib/pq v1.10.2
 	github.com/rs/cors v1.8.0
 	github.com/soheilhy/cmux v0.1.5

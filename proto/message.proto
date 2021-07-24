@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "github.com/wei840222/tinychats/proto";
+option java_multiple_files = true;
+option java_package = "com.github.wei840222.tinychats.proto";
+option java_outer_classname = "MessageProto";
+
+import "google/protobuf/timestamp.proto";
+
+package com.github.wei840222.tinychats.proto;
+
+service Message {
+    rpc CreateMessage (CreateMessageRequest) returns (CreateMessageResponse) {}
+    rpc ListMessages (ListMessagesRequest) returns (ListMessagesResponse) {}
+}
+
+message MessageResponse {
+    int64 id = 1;
+    string userId = 2;
+    string text = 3;
+    google.protobuf.Timestamp createdAt = 4;
+}
+
+message CreateMessageRequest {
+    string userId = 1;
+    string text = 2;
+}
+
+message CreateMessageResponse {
+    int64 id = 1;
+    google.protobuf.Timestamp createdAt = 2;
+}
+
+message ListMessagesRequest {
+
+}
+
+message ListMessagesResponse {
+    repeated MessageResponse messages = 1;
+}

@@ -1,4 +1,4 @@
-package main
+package pkg
 
 import (
 	"sync"
@@ -12,7 +12,7 @@ var (
 	logger     *zap.Logger
 )
 
-func zapLogger() *zap.Logger {
+func ZapLogger() *zap.Logger {
 	loggerInit.Do(func() {
 		l, err := zap.Config{
 			Level:       zap.NewAtomicLevelAt(zap.DebugLevel),

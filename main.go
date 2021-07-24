@@ -1,11 +1,6 @@
 package main
 
 import (
-	"github.com/wei840222/todo/graph"
-	"github.com/wei840222/todo/graph/generated"
-	"github.com/wei840222/todo/pkg/todo"
-	"github.com/wei840222/todo/proto"
-
 	"embed"
 	"flag"
 	"fmt"
@@ -20,9 +15,17 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	line_login_sdk "github.com/kkdai/line-login-sdk-go"
 	"github.com/lib/pq"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
+	"github.com/wei840222/tinychats/graph"
+	"github.com/wei840222/tinychats/graph/generated"
+	"github.com/wei840222/tinychats/graph/model"
+	"github.com/wei840222/tinychats/pkg"
+	"github.com/wei840222/tinychats/pkg/message"
+	"github.com/wei840222/tinychats/pkg/user"
+	"github.com/wei840222/tinychats/proto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -39,12 +42,14 @@ import (
 var webDist embed.FS
 
 func main() {
-	log := zapLogger()
+	log := pkg.ZapLogger()
 
 	var port int
-	var databaseURL string
+	var databaseURL, lineChannelID, lineChannelSecret string
 	flag.IntVar(&port, "port", 8080, "server listening port")
-	flag.StringVar(&databaseURL, "databaseUrl", "", "database url (ex: postgres://username:password@localhost:5432/todo)")
+	flag.StringVar(&databaseURL, "database.url", "", "database url (ex: postgres://username:password@localhost:5432/todo)")
+	flag.StringVar(&lineChannelID, "line.channel.id", "", "LINE Login Channel Id")
+	flag.StringVar(&lineChannelSecret, "line.channel.secret", "", "LINE Login Channel Secret")
 	flag.Parse()
 
 	if envPort := os.Getenv("PORT"); port == 8080 && envPort != "" {
@@ -52,6 +57,12 @@ func main() {
 	}
 	if databaseURL == "" {
 		databaseURL = os.Getenv("DATABASE_URL")
+	}
+	if lineChannelID == "" {
+		lineChannelID = os.Getenv("LINE_CHANNEL_ID")
+	}
+	if lineChannelSecret == "" {
+		lineChannelSecret = os.Getenv("LINE_CHANNEL_SECRET")
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -75,16 +86,25 @@ func main() {
 		generated.NewExecutableSchema(
 			generated.Config{
 				Resolvers: &graph.Resolver{
-					Logger:     log,
-					TodoClient: proto.NewTodoClient(grpcC),
+					Logger:             log,
+					UserClient:         proto.NewUserClient(grpcC),
+					MessageClient:      proto.NewMessageClient(grpcC),
+					MessageCreatedChan: make(chan *model.Message, 100),
 				},
 			}),
 	))
 
+	lineLoginClient, err := line_login_sdk.New(lineChannelID, lineChannelSecret)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	httpS := &http.Server{Handler: cors.Default().
 		Handler(
-			newAccessLogMiddleware(
-				newRecoveryMiddleware(m),
+			pkg.NewAccessLogMiddleware(
+				pkg.NewRecoveryMiddleware(
+					pkg.NewLINELoginMiddleware(m, lineLoginClient),
+				),
 			),
 		),
 	}
@@ -130,11 +150,16 @@ func main() {
 		db = postgresDB
 	}
 
-	todoS, err := todo.NewServer(db)
+	userS, err := user.NewServer(db)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	proto.RegisterTodoServer(grpcS, todoS)
+	messageS, err := message.NewServer(db)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	proto.RegisterUserServer(grpcS, userS)
+	proto.RegisterMessageServer(grpcS, messageS)
 
 	reflection.Register(grpcS)
 

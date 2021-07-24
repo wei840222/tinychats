@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+option go_package = "github.com/wei840222/tinychats/proto";
+option java_multiple_files = true;
+option java_package = "com.github.wei840222.tinychats.proto";
+option java_outer_classname = "UserProto";
+
+import "google/protobuf/empty.proto";
+
+package com.github.wei840222.tinychats.proto;
+
+service User {
+    rpc GetUser (GetUserRequest) returns (GetUserResponse) {}
+    rpc MutiGetUsers (MutiGetUsersRequest) returns (MutiGetUsersResponse) {}
+    rpc CreateUser (CreateUserRequest) returns (google.protobuf.Empty) {}
+    rpc UpdateUser (UpdateUserRequest) returns (google.protobuf.Empty) {}
+}
+
+message UserResponse {
+    string id = 1;
+    string name = 2;
+    string avatarUrl = 3;
+}
+
+message GetUserRequest {
+    string id = 1;
+}
+
+message GetUserResponse {
+    UserResponse user = 1;
+}
+
+message MutiGetUsersRequest {
+    repeated string ids = 1;
+}
+
+message MutiGetUsersResponse {
+    repeated UserResponse users = 1;
+}
+
+message CreateUserRequest {
+    string id = 1;
+    string name = 2;
+    string avatarUrl = 3;
+}
+
+message UpdateUserRequest{
+    string id = 1;
+    string name = 2;
+    string avatarUrl = 3;
+}

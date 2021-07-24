@@ -5,42 +5,113 @@ package graph
 
 import (
 	"context"
+	"strconv"
+	"time"
 
-	"github.com/wei840222/todo/graph/generated"
-	"github.com/wei840222/todo/graph/model"
-	"github.com/wei840222/todo/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
+	"github.com/AlekSi/pointer"
+	"github.com/wei840222/tinychats/graph/generated"
+	"github.com/wei840222/tinychats/graph/model"
+	"github.com/wei840222/tinychats/pkg"
+	"github.com/wei840222/tinychats/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	res, err := r.TodoClient.CreateTodo(ctx, &proto.CreateTodoRequest{
-		Text: input.Text,
+func (r *messageResolver) User(ctx context.Context, obj *model.Message) (*model.User, error) {
+	res, err := r.UserClient.GetUser(ctx, &proto.GetUserRequest{
+		Id: obj.User.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &model.Todo{
-		ID:   res.GetId(),
-		Text: input.Text,
-		Done: false,
+	return &model.User{
+		ID:        res.GetUser().GetId(),
+		Name:      res.GetUser().GetName(),
+		AvatarURL: pointer.ToStringOrNil(res.GetUser().GetAvatarUrl()),
 	}, nil
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	res, err := r.TodoClient.ListTodos(ctx, &emptypb.Empty{})
+func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMessage) (*model.Message, error) {
+	user, err := pkg.GetLINELoginUserForContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var todos []*model.Todo
-	for _, t := range res.GetTodos() {
-		todos = append(todos, &model.Todo{
-			ID:   t.GetId(),
-			Text: t.GetText(),
-			Done: t.GetDone(),
+	res, err := r.MessageClient.CreateMessage(ctx, &proto.CreateMessageRequest{
+		UserId: user.UserID,
+		Text:   input.Text,
+	})
+	if err != nil {
+		return nil, err
+	}
+	newMessage := model.Message{
+		ID:        strconv.Itoa(int(res.GetId())),
+		Text:      input.Text,
+		CreatedAt: res.GetCreatedAt().AsTime().Format(time.RFC3339),
+		User: &model.User{
+			ID: user.UserID,
+		},
+	}
+	r.MessageCreatedChan <- &newMessage
+	return &newMessage, nil
+}
+
+func (r *queryResolver) CurrentUser(ctx context.Context) (*model.User, error) {
+	user, err := pkg.GetLINELoginUserForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.UserClient.GetUser(ctx, &proto.GetUserRequest{Id: user.UserID})
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+		if _, err := r.UserClient.CreateUser(ctx, &proto.CreateUserRequest{
+			Id:        user.UserID,
+			Name:      user.DisplayName,
+			AvatarUrl: user.PictureURL,
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := r.UserClient.UpdateUser(ctx, &proto.UpdateUserRequest{
+		Id:        res.GetUser().GetId(),
+		Name:      user.DisplayName,
+		AvatarUrl: user.PictureURL,
+	}); err != nil {
+		return nil, err
+	}
+	return &model.User{
+		ID:        user.UserID,
+		Name:      user.DisplayName,
+		AvatarURL: pointer.ToStringOrNil(user.PictureURL),
+	}, nil
+}
+
+func (r *queryResolver) Messages(ctx context.Context) ([]*model.Message, error) {
+	res, err := r.MessageClient.ListMessages(ctx, &proto.ListMessagesRequest{})
+	if err != nil {
+		return nil, err
+	}
+	var messages []*model.Message
+	for _, messageResponse := range res.GetMessages() {
+		messages = append(messages, &model.Message{
+			ID:        strconv.Itoa(int(messageResponse.GetId())),
+			Text:      messageResponse.GetText(),
+			CreatedAt: messageResponse.GetCreatedAt().AsTime().Format(time.RFC3339),
+			User: &model.User{
+				ID: messageResponse.GetUserId(),
+			},
 		})
 	}
-	return todos, nil
+	return messages, nil
 }
+
+func (r *subscriptionResolver) MessageCreated(ctx context.Context) (<-chan *model.Message, error) {
+	return r.MessageCreatedChan, nil
+}
+
+// Message returns generated.MessageResolver implementation.
+func (r *Resolver) Message() generated.MessageResolver { return &messageResolver{r} }
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
@@ -48,5 +119,10 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
+
+type messageResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
