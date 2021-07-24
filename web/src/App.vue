@@ -1,10 +1,9 @@
 <template lang="pug">
-div 123
 router-view
 </template>
 
 <script>
-import { provide, onMounted } from "vue";
+import { provide, onBeforeMount } from "vue";
 import {
   ApolloClient,
   ApolloLink,
@@ -23,10 +22,14 @@ export default {
       operation.setContext(({ headers = {} }) => ({
         headers: {
           ...headers,
-          Authorization: window.localStorage.getItem("accessToken") || null,
+          Authorization: (() => {
+            if (process.env.NODE_ENV !== "production") {
+              return process.env.VUE_APP_ACCESS_TOKEN;
+            }
+            return liff.isLoggedIn() ? liff.getAccessToken() : null;
+          })(),
         },
       }));
-
       return forward(operation);
     });
 
@@ -45,20 +48,14 @@ export default {
     });
     provide(DefaultApolloClient, apolloClient);
 
-    onMounted(async () => {
+    onBeforeMount(async () => {
       if (process.env.NODE_ENV !== "production") {
-        window.localStorage.setItem(
-          "accessToken",
-          process.env.VUE_APP_ACCESS_TOKEN
-        );
         return;
       }
       await liff.init({ liffId: "1656247924-eX5ZOvN0" });
       if (!liff.isLoggedIn()) {
         liff.login();
-        return;
       }
-      window.localStorage.setItem("accessToken", liff.getAccessToken());
     });
   },
 };
