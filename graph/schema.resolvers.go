@@ -19,7 +19,7 @@ import (
 )
 
 func (r *messageResolver) User(ctx context.Context, obj *model.Message) (*model.User, error) {
-	res, err := r.userLoader.Load(obj.User.ID)
+	res, err := r.dataloadersFormContext(ctx).userLoader.Load(obj.User.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (r *messageResolver) User(ctx context.Context, obj *model.Message) (*model.
 }
 
 func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMessage) (*model.Message, error) {
-	user, err := pkg.GetLINELoginUserForContext(ctx)
+	user, err := pkg.GetLINELoginUserFormContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMes
 }
 
 func (r *queryResolver) CurrentUser(ctx context.Context) (*model.User, error) {
-	user, err := pkg.GetLINELoginUserForContext(ctx)
+	user, err := pkg.GetLINELoginUserFormContext(ctx)
 	if err != nil {
 		return nil, err
 	}

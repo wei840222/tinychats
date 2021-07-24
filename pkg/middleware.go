@@ -133,7 +133,7 @@ func NewLINELoginMiddleware(lineLoginClient *line_login_sdk.Client) Middleware {
 	}
 }
 
-func GetLINELoginUserForContext(ctx context.Context) (*line_login_sdk.GetUserProfileResponse, error) {
+func GetLINELoginUserFormContext(ctx context.Context) (*line_login_sdk.GetUserProfileResponse, error) {
 	lineLoginUser, ok := ctx.Value(lineLoginUserCtxKey).(*line_login_sdk.GetUserProfileResponse)
 	if !ok {
 		return nil, errors.New("unknown user")

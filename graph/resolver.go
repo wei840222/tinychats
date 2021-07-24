@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/wei840222/tinychats/graph/generated"
 	"github.com/wei840222/tinychats/graph/model"
+	"github.com/wei840222/tinychats/pkg"
 	"github.com/wei840222/tinychats/proto"
 )
 
@@ -28,8 +29,10 @@ type Resolver struct {
 
 	userClient    proto.UserClient
 	messageClient proto.MessageClient
+}
 
-	userLoader *UserLoader
+func (r *Resolver) dataloadersFormContext(ctx context.Context) *dataloaders {
+	return ctx.Value(dataloadersCtxKey).(*dataloaders)
 }
 
 func NewGraphQLHandler(userClient proto.UserClient, messageClient proto.MessageClient) http.Handler {
@@ -37,25 +40,6 @@ func NewGraphQLHandler(userClient proto.UserClient, messageClient proto.MessageC
 		messageCreatedChans: make(map[string]chan *model.Message),
 		userClient:          userClient,
 		messageClient:       messageClient,
-		userLoader: NewUserLoader(UserLoaderConfig{
-			Fetch: func(ids []string) ([]*model.User, []error) {
-				res, err := userClient.MutiGetUsers(context.Background(), &proto.MutiGetUsersRequest{Ids: ids})
-				if err != nil {
-					return nil, []error{err}
-				}
-				var users []*model.User
-				for _, userResponse := range res.GetUsers() {
-					users = append(users, &model.User{
-						ID:        userResponse.GetId(),
-						Name:      userResponse.GetName(),
-						AvatarURL: pointer.ToStringOrNil(userResponse.GetAvatarUrl()),
-					})
-				}
-				return users, nil
-			},
-			Wait:     2 * time.Millisecond,
-			MaxBatch: 100,
-		}),
 	}
 	gqlHandler := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolvers}))
 	gqlHandler.AddTransport(transport.Websocket{
@@ -75,5 +59,40 @@ func NewGraphQLHandler(userClient proto.UserClient, messageClient proto.MessageC
 	gqlHandler.SetQueryCache(lru.New(1000))
 	gqlHandler.Use(extension.Introspection{})
 	gqlHandler.Use(extension.AutomaticPersistedQuery{Cache: lru.New(100)})
-	return gqlHandler
+	return newGraphQDataloadersMiddleware(userClient)(gqlHandler)
+}
+
+var dataloadersCtxKey = struct{}{}
+
+type dataloaders struct {
+	userLoader *UserLoader
+}
+
+func newGraphQDataloadersMiddleware(userClient proto.UserClient) pkg.Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), dataloadersCtxKey, &dataloaders{
+				userLoader: NewUserLoader(UserLoaderConfig{
+					Fetch: func(ids []string) ([]*model.User, []error) {
+						res, err := userClient.MutiGetUsers(r.Context(), &proto.MutiGetUsersRequest{Ids: ids})
+						if err != nil {
+							return nil, []error{err}
+						}
+						var users []*model.User
+						for _, userResponse := range res.GetUsers() {
+							users = append(users, &model.User{
+								ID:        userResponse.GetId(),
+								Name:      userResponse.GetName(),
+								AvatarURL: pointer.ToStringOrNil(userResponse.GetAvatarUrl()),
+							})
+						}
+						return users, nil
+					},
+					Wait:     2 * time.Millisecond,
+					MaxBatch: 100,
+				}),
+			})
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
