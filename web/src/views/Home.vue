@@ -12,7 +12,7 @@ van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id")
   div(style="padding-top: 7px;") {{ msg.text }}
 #message-end
 van-sticky(v-if="!currentUserLoading && !listMessagesLoading" :offset-bottom="0" position="bottom")
-  van-field(v-model="createMessageState" size="small" placeholder="please input message")
+  van-field(v-model="createMessageState" size="small" placeholder="please input message" clickable autofocus)
     template(#button)
       van-button(size="small" icon="comment-o" :loading="createMessageLoading" :disabled="createMessageState.trim() === ''" @click="createMessage") Send
 </template>
