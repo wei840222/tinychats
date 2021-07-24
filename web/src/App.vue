@@ -26,11 +26,11 @@ export default {
     if (process.env.NODE_ENV === "production") {
       liff.init({ liffId: "1656247924-eX5ZOvN0" }).then(() => {
         if (!liff.isLoggedIn()) {
-          window.localStorage.setItem("liffRefresh", "true");
+          window.sessionStorage.setItem("liffRefresh", "true");
           liff.login();
         } else {
-          if (window.localStorage.getItem("liffRefresh") === "true") {
-            window.localStorage.removeItem("liffRefresh");
+          if (window.sessionStorage.getItem("liffRefresh") === "true") {
+            window.sessionStorage.removeItem("liffRefresh");
             router.go();
           }
         }
