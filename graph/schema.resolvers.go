@@ -19,17 +19,11 @@ import (
 )
 
 func (r *messageResolver) User(ctx context.Context, obj *model.Message) (*model.User, error) {
-	res, err := r.UserClient.GetUser(ctx, &proto.GetUserRequest{
-		Id: obj.User.ID,
-	})
+	res, err := r.userLoader.Load(obj.User.ID)
 	if err != nil {
 		return nil, err
 	}
-	return &model.User{
-		ID:        res.GetUser().GetId(),
-		Name:      res.GetUser().GetName(),
-		AvatarURL: pointer.ToStringOrNil(res.GetUser().GetAvatarUrl()),
-	}, nil
+	return res, nil
 }
 
 func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMessage) (*model.Message, error) {
@@ -37,7 +31,7 @@ func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMes
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.MessageClient.CreateMessage(ctx, &proto.CreateMessageRequest{
+	res, err := r.messageClient.CreateMessage(ctx, &proto.CreateMessageRequest{
 		UserId: user.UserID,
 		Text:   input.Text,
 	})
@@ -53,7 +47,7 @@ func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMes
 		},
 	}
 
-	for _, messageCreatedChan := range r.MessageCreatedChans {
+	for _, messageCreatedChan := range r.messageCreatedChans {
 		messageCreatedChan <- &newMessage
 	}
 	return &newMessage, nil
@@ -64,12 +58,12 @@ func (r *queryResolver) CurrentUser(ctx context.Context) (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.UserClient.GetUser(ctx, &proto.GetUserRequest{Id: user.UserID})
+	res, err := r.userClient.GetUser(ctx, &proto.GetUserRequest{Id: user.UserID})
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
 			return nil, err
 		}
-		if _, err := r.UserClient.CreateUser(ctx, &proto.CreateUserRequest{
+		if _, err := r.userClient.CreateUser(ctx, &proto.CreateUserRequest{
 			Id:        user.UserID,
 			Name:      user.DisplayName,
 			AvatarUrl: user.PictureURL,
@@ -77,7 +71,7 @@ func (r *queryResolver) CurrentUser(ctx context.Context) (*model.User, error) {
 			return nil, err
 		}
 	} else {
-		if _, err := r.UserClient.UpdateUser(ctx, &proto.UpdateUserRequest{
+		if _, err := r.userClient.UpdateUser(ctx, &proto.UpdateUserRequest{
 			Id:        res.GetUser().GetId(),
 			Name:      user.DisplayName,
 			AvatarUrl: user.PictureURL,
@@ -93,7 +87,7 @@ func (r *queryResolver) CurrentUser(ctx context.Context) (*model.User, error) {
 }
 
 func (r *queryResolver) Messages(ctx context.Context) ([]*model.Message, error) {
-	res, err := r.MessageClient.ListMessages(ctx, &proto.ListMessagesRequest{})
+	res, err := r.messageClient.ListMessages(ctx, &proto.ListMessagesRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -114,17 +108,17 @@ func (r *queryResolver) Messages(ctx context.Context) ([]*model.Message, error) 
 func (r *subscriptionResolver) MessageCreated(ctx context.Context) (<-chan *model.Message, error) {
 	uuid := uuid.New().String()
 	r.Lock()
-	r.MessageCreatedChans[uuid] = make(chan *model.Message, 1)
+	r.messageCreatedChans[uuid] = make(chan *model.Message, 1)
 	r.Unlock()
 
 	go func() {
 		<-ctx.Done()
 		r.Lock()
-		delete(r.MessageCreatedChans, uuid)
+		delete(r.messageCreatedChans, uuid)
 		r.Unlock()
 	}()
 
-	return r.MessageCreatedChans[uuid], nil
+	return r.messageCreatedChans[uuid], nil
 }
 
 // Message returns generated.MessageResolver implementation.

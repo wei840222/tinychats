@@ -9,15 +9,9 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/handler/extension"
-	"github.com/99designs/gqlgen/graphql/handler/lru"
-	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/NYTimes/gziphandler"
-	"github.com/gorilla/websocket"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -26,8 +20,6 @@ import (
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 	"github.com/wei840222/tinychats/graph"
-	"github.com/wei840222/tinychats/graph/generated"
-	"github.com/wei840222/tinychats/graph/model"
 	"github.com/wei840222/tinychats/pkg"
 	"github.com/wei840222/tinychats/pkg/message"
 	"github.com/wei840222/tinychats/pkg/user"
@@ -86,47 +78,18 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	gqlHandler := handler.New(
-		generated.NewExecutableSchema(
-			generated.Config{
-				Resolvers: &graph.Resolver{
-					Logger:              log,
-					UserClient:          proto.NewUserClient(grpcC),
-					MessageClient:       proto.NewMessageClient(grpcC),
-					MessageCreatedChans: make(map[string]chan *model.Message),
-				},
-			}),
-	)
-	gqlHandler.AddTransport(transport.Websocket{
-		Upgrader: websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
-		},
-		KeepAlivePingInterval: 10 * time.Second,
-	})
-	gqlHandler.AddTransport(transport.Options{})
-	gqlHandler.AddTransport(transport.GET{})
-	gqlHandler.AddTransport(transport.POST{})
-	gqlHandler.AddTransport(transport.MultipartForm{})
-	gqlHandler.SetQueryCache(lru.New(1000))
-	gqlHandler.Use(extension.Introspection{})
-	gqlHandler.Use(extension.AutomaticPersistedQuery{Cache: lru.New(100)})
-
 	m := http.NewServeMux()
 	m.Handle("/", pkg.NewCacheControl(http.FileServer(http.FS(public)), 86400))
 	m.Handle("/playground", pkg.NewCacheControl(playground.Handler("GraphQL Playground", "/graphql"), 2592000))
-	m.Handle("/graphql", gqlHandler)
+	m.Handle("/graphql", graph.NewGraphQLHandler(proto.NewUserClient(grpcC), proto.NewMessageClient(grpcC)))
 
 	lineLoginClient, err := line_login_sdk.New(lineChannelID, lineChannelSecret)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	httpS := &http.Server{Handler: cors.AllowAll().
-		Handler(
+	httpS := &http.Server{
+		Handler: cors.AllowAll().Handler(
 			pkg.NewAccessLogMiddleware(
 				pkg.NewRecoveryMiddleware(
 					pkg.NewLINELoginMiddleware(gziphandler.GzipHandler(m), lineLoginClient),
