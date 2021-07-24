@@ -104,8 +104,10 @@ export default {
           query: LIST_MESSAGES,
         });
         cacheData = JSON.parse(JSON.stringify(cacheData));
+        cacheData.messages.push(
+          JSON.parse(JSON.stringify(data.messageCreated))
+        );
         console.log(cacheData);
-        cacheData.messages.push(data.messageCreated);
         apolloClient.cache.writeQuery({ query: LIST_MESSAGES, cacheData });
       },
       {
