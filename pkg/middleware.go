@@ -84,6 +84,10 @@ var lineLoginUserCtxKey = struct{}{}
 func NewLINELoginMiddleware(next http.Handler, lineLoginClient *line_login_sdk.Client) http.Handler {
 	log := ZapLogger()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Connection") == "Upgrade" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		accessToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if accessToken == "" {
 			log.Info("miss accessToken", zap.String("system", "lineLogin"))

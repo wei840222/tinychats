@@ -55,15 +55,12 @@ export default {
             definition.operation === "subscription"
           );
         },
-        from([
-          authMiddleware,
-          new WebSocketLink({
-            uri: `wss://tinychats.herokuapp.com/graphql`,
-            options: {
-              reconnect: true,
-            },
-          }),
-        ]),
+        new WebSocketLink({
+          uri: `wss://tinychats.herokuapp.com/graphql`,
+          options: {
+            reconnect: true,
+          },
+        }),
         from([
           authMiddleware,
           createPersistedQueryLink({
