@@ -4,7 +4,6 @@ router-view
 
 <script>
 import { provide } from "vue";
-import { useRouter } from "vue-router";
 import {
   ApolloClient,
   ApolloLink,
@@ -22,17 +21,10 @@ import liff from "@line/liff";
 
 export default {
   setup() {
-    const router = useRouter();
     if (process.env.NODE_ENV === "production") {
       liff.init({ liffId: "1656247924-eX5ZOvN0" }).then(() => {
         if (!liff.isLoggedIn()) {
-          window.sessionStorage.setItem("liffRefresh", "true");
           liff.login();
-        } else {
-          if (window.sessionStorage.getItem("liffRefresh") === "true") {
-            window.sessionStorage.removeItem("liffRefresh");
-            router.go();
-          }
         }
       });
     }
