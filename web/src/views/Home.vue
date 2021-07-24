@@ -98,11 +98,13 @@ export default {
     watch(
       onMessageCreated,
       (data) => {
-        console.log(data.messageCreated);
         messagesCreated.value.push(
           JSON.parse(JSON.stringify(data.messageCreated))
         );
-        console.log(messagesCreated.value);
+        window.scrollTo(
+          0,
+          document.body.scrollHeight || document.documentElement.scrollHeight
+        );
       },
       {
         lazy: true,
