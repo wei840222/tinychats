@@ -9,9 +9,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/gorilla/websocket"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -79,10 +84,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	m := http.NewServeMux()
-	m.Handle("/", http.FileServer(http.FS(public)))
-	m.Handle("/playground", playground.Handler("GraphQL Playground", "/graphql"))
-	m.Handle("/graphql", handler.NewDefaultServer(
+
+	gqlHandler := handler.New(
 		generated.NewExecutableSchema(
 			generated.Config{
 				Resolvers: &graph.Resolver{
@@ -92,7 +95,29 @@ func main() {
 					MessageCreatedChan: make(chan *model.Message),
 				},
 			}),
-	))
+	)
+	gqlHandler.AddTransport(transport.Websocket{
+		Upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
+		KeepAlivePingInterval: 10 * time.Second,
+	})
+	gqlHandler.AddTransport(transport.Options{})
+	gqlHandler.AddTransport(transport.GET{})
+	gqlHandler.AddTransport(transport.POST{})
+	gqlHandler.AddTransport(transport.MultipartForm{})
+	gqlHandler.SetQueryCache(lru.New(1000))
+	gqlHandler.Use(extension.Introspection{})
+	gqlHandler.Use(extension.AutomaticPersistedQuery{Cache: lru.New(100)})
+
+	m := http.NewServeMux()
+	m.Handle("/", http.FileServer(http.FS(public)))
+	m.Handle("/playground", playground.Handler("GraphQL Playground", "/graphql"))
+	m.Handle("/graphql", gqlHandler)
 
 	lineLoginClient, err := line_login_sdk.New(lineChannelID, lineChannelSecret)
 	if err != nil {
