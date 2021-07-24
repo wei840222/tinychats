@@ -5,7 +5,7 @@ van-cell(v-else, v-for="(t, i) in todos", :key="t.id", :title="t.text")
     van-switch(v-model="doneSwitchState[t.id]", size="24")
 van-field(v-model="createTodoState")
   template(#button)
-    van-button(size="small", @click="createTodo") add
+    van-button(size="small", :loading="createTodoLoading" @click="createTodo") add
 </template>
 
 <script>
@@ -31,7 +31,7 @@ export default {
     const doneSwitchState = ref({});
     const createTodoState = ref("");
 
-    const { mutate: createTodo } = useMutation(
+    const { mutate: createTodo, loading: createTodoLoading } = useMutation(
       gql`
         mutation createTodo($text: String!) {
           createTodo(input: { text: $text }) {
@@ -54,7 +54,14 @@ export default {
         },
       })
     );
-    return { loading, todos, doneSwitchState, createTodoState, createTodo };
+    return {
+      loading,
+      todos,
+      doneSwitchState,
+      createTodoState,
+      createTodo,
+      createTodoLoading,
+    };
   },
 };
 </script>
