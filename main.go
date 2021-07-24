@@ -21,6 +21,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/lib/pq"
+	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -79,7 +80,14 @@ func main() {
 				},
 			}),
 	))
-	httpS := &http.Server{Handler: newAccessLogMiddleware(newRecoveryMiddleware(m))}
+
+	httpS := &http.Server{Handler: cors.Default().
+		Handler(
+			newAccessLogMiddleware(
+				newRecoveryMiddleware(m),
+			),
+		),
+	}
 
 	// Shared options for the logger, with a custom gRPC code to log level function.
 	recoveryOpts := []grpc_recovery.Option{
