@@ -31,7 +31,11 @@ export default {
     const doneSwitchState = ref({});
     const createTodoState = ref("");
 
-    const { mutate: createTodo, loading: createTodoLoading } = useMutation(
+    const {
+      mutate: createTodo,
+      loading: createTodoLoading,
+      onDone: onCreateTodoDone,
+    } = useMutation(
       gql`
         mutation createTodo($text: String!) {
           createTodo(input: { text: $text }) {
@@ -46,7 +50,6 @@ export default {
           text: createTodoState.value,
         },
         update: (cache, { data: { createTodo } }) => {
-          createTodoState.value = "";
           let data = cache.readQuery({ query: LIST_TODOS });
           data = JSON.parse(JSON.stringify(data));
           data.todos.push(createTodo);
@@ -54,6 +57,7 @@ export default {
         },
       })
     );
+    onCreateTodoDone(() => (createTodoState.value = ""));
     return {
       loading,
       todos,
