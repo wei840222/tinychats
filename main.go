@@ -34,8 +34,8 @@ import (
 	"moul.io/zapgorm2"
 )
 
-//go:embed web
-var web embed.FS
+//go:embed web/dist
+var webDist embed.FS
 
 func main() {
 	log := zapLogger()
@@ -63,7 +63,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	public, err := fs.Sub(web, "web")
+	public, err := fs.Sub(webDist, "web/dist")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
