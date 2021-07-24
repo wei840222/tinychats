@@ -2,16 +2,16 @@
 van-loading(v-if="currentUserLoading || listMessagesLoading ", style="text-align: center; margin-top: 10px") Loading...
 van-cell(v-else, v-for="(msg, i) in messages", :key="msg.id")
   template(#title)
-    van-badge(:content="msg.user.name" color="#1989fa")
+    van-badge(:content="msg.user.name" color="#1989fa" style="width: max-content; left: 0px; top: 3px;")
       van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round)
   | {{ msg.text }}
 van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id")
   template(#title)
-    van-badge(:content="msg.user.name" color="#1989fa")
+    van-badge(:content="msg.user.name" color="#1989fa" style="width: max-content; left: 0px; top: 3px;")
       van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round)
   | {{ msg.text }}
 #message-end(style="margin-bottom: 60px;")
-van-field.fixedbutton(v-model="createMessageState" size="small")
+van-field.fixedbutton(v-model="createMessageState" size="small" placeholder="please input message")
   template(#button)
     van-button(size="small" icon="comment-o" :loading="createMessageLoading" :disabled="createMessageState.trim() === ''" @click="createMessage") Send
 </template>
