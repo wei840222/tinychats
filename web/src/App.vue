@@ -1,14 +1,15 @@
 <template lang="pug">
-div {{ accessToken }}
 router-view
 </template>
 
 <script>
-import { ref, provide, onMounted } from "vue";
+import { provide, onMounted } from "vue";
 import {
   ApolloClient,
+  ApolloLink,
   createHttpLink,
   InMemoryCache,
+  from,
 } from "@apollo/client/core";
 import { createPersistedQueryLink } from "@apollo/client/link/persisted-queries";
 import { sha256 } from "crypto-hash";
@@ -17,31 +18,47 @@ import liff from "@line/liff";
 
 export default {
   setup() {
+    const authMiddleware = new ApolloLink((operation, forward) => {
+      operation.setContext(({ headers = {} }) => ({
+        headers: {
+          ...headers,
+          Authorization: window.localStorage.getItem("accessToken") || null,
+        },
+      }));
+
+      return forward(operation);
+    });
+
     const apolloClient = new ApolloClient({
-      link: createPersistedQueryLink({
-        useGETForHashedQueries: true,
-        sha256,
-      }).concat(
+      link: from([
+        authMiddleware,
+        createPersistedQueryLink({
+          useGETForHashedQueries: true,
+          sha256,
+        }),
         createHttpLink({
-          uri: "https://wei840222-todo.herokuapp.com/graphql",
-        })
-      ),
+          uri: "https://tinychats.herokuapp.com/graphql",
+        }),
+      ]),
       cache: new InMemoryCache(),
     });
     provide(DefaultApolloClient, apolloClient);
 
-    const accessToken = ref("");
-
     onMounted(async () => {
+      if (process.env.NODE_ENV !== "production") {
+        window.localStorage.setItem(
+          "accessToken",
+          process.env.VUE_APP_ACCESS_TOKEN
+        );
+        return;
+      }
       await liff.init({ liffId: "1656247924-eX5ZOvN0" });
       if (!liff.isLoggedIn()) {
         liff.login();
         return;
       }
-      accessToken.value = liff.getAccessToken();
+      window.localStorage.setItem("accessToken", liff.getAccessToken());
     });
-
-    return { accessToken };
   },
 };
 </script>

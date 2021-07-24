@@ -99,7 +99,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	httpS := &http.Server{Handler: cors.Default().
+	httpS := &http.Server{Handler: cors.AllowAll().
 		Handler(
 			pkg.NewAccessLogMiddleware(
 				pkg.NewRecoveryMiddleware(
