@@ -114,7 +114,7 @@ func (r *queryResolver) Messages(ctx context.Context) ([]*model.Message, error) 
 func (r *subscriptionResolver) MessageCreated(ctx context.Context) (<-chan *model.Message, error) {
 	uuid := uuid.New().String()
 	r.Lock()
-	r.MessageCreatedChans[uuid] = make(chan *model.Message)
+	r.MessageCreatedChans[uuid] = make(chan *model.Message, 1)
 	r.Unlock()
 
 	go func() {
