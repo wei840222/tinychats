@@ -72,13 +72,14 @@ func (r *queryResolver) CurrentUser(ctx context.Context) (*model.User, error) {
 		}); err != nil {
 			return nil, err
 		}
-	}
-	if _, err := r.UserClient.UpdateUser(ctx, &proto.UpdateUserRequest{
-		Id:        res.GetUser().GetId(),
-		Name:      user.DisplayName,
-		AvatarUrl: user.PictureURL,
-	}); err != nil {
-		return nil, err
+	} else {
+		if _, err := r.UserClient.UpdateUser(ctx, &proto.UpdateUserRequest{
+			Id:        res.GetUser().GetId(),
+			Name:      user.DisplayName,
+			AvatarUrl: user.PictureURL,
+		}); err != nil {
+			return nil, err
+		}
 	}
 	return &model.User{
 		ID:        user.UserID,

@@ -86,8 +86,7 @@ func NewLINELoginMiddleware(next http.Handler, lineLoginClient *line_login_sdk.C
 			next.ServeHTTP(w, r)
 			return
 		}
-		ctx := context.WithValue(r.Context(), lineLoginUserCtxKey, &res)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), lineLoginUserCtxKey, res)))
 	})
 }
 
