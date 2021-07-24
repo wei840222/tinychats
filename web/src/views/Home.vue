@@ -13,7 +13,7 @@ van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id")
 #message-end(style="margin-bottom: 60px;")
 van-field.fixedbutton(v-model="createMessageState" size="small")
   template(#button)
-    van-button(size="small" icon="comment-o" :loading="createMessageLoading" @click="createMessage") Send
+    van-button(size="small" icon="comment-o" :loading="createMessageLoading" :disabled="createMessageState.trim() === ''" @click="createMessage") Send
 </template>
 
 <script>
