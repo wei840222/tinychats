@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"sync"
+
 	"github.com/wei840222/tinychats/graph/model"
 	"github.com/wei840222/tinychats/proto"
 	"go.uber.org/zap"
@@ -11,9 +13,11 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
+	sync.Mutex
+
 	Logger        *zap.Logger
 	UserClient    proto.UserClient
 	MessageClient proto.MessageClient
 
-	MessageCreatedChan chan *model.Message
+	MessageCreatedChans map[string]chan *model.Message
 }

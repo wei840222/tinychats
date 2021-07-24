@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AlekSi/pointer"
+	"github.com/google/uuid"
 	"github.com/wei840222/tinychats/graph/generated"
 	"github.com/wei840222/tinychats/graph/model"
 	"github.com/wei840222/tinychats/pkg"
@@ -51,7 +52,10 @@ func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMes
 			ID: user.UserID,
 		},
 	}
-	r.MessageCreatedChan <- &newMessage
+
+	for _, messageCreatedChan := range r.MessageCreatedChans {
+		messageCreatedChan <- &newMessage
+	}
 	return &newMessage, nil
 }
 
@@ -108,7 +112,19 @@ func (r *queryResolver) Messages(ctx context.Context) ([]*model.Message, error) 
 }
 
 func (r *subscriptionResolver) MessageCreated(ctx context.Context) (<-chan *model.Message, error) {
-	return r.MessageCreatedChan, nil
+	uuid := uuid.New().String()
+	r.Lock()
+	r.MessageCreatedChans[uuid] = make(chan *model.Message)
+	r.Unlock()
+
+	go func() {
+		<-ctx.Done()
+		r.Lock()
+		delete(r.MessageCreatedChans, uuid)
+		r.Unlock()
+	}()
+
+	return r.MessageCreatedChans[uuid], nil
 }
 
 // Message returns generated.MessageResolver implementation.

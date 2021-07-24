@@ -89,10 +89,10 @@ func main() {
 		generated.NewExecutableSchema(
 			generated.Config{
 				Resolvers: &graph.Resolver{
-					Logger:             log,
-					UserClient:         proto.NewUserClient(grpcC),
-					MessageClient:      proto.NewMessageClient(grpcC),
-					MessageCreatedChan: make(chan *model.Message),
+					Logger:              log,
+					UserClient:          proto.NewUserClient(grpcC),
+					MessageClient:       proto.NewMessageClient(grpcC),
+					MessageCreatedChans: make(map[string]chan *model.Message),
 				},
 			}),
 	)
