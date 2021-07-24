@@ -69,7 +69,7 @@ const CREATE_MESSAGE = gql`
   }
 `;
 
-const ON_MESSAGECREATED = gql`
+const ON_MESSAGE_CREATED = gql`
   subscription onMessageCreated {
     messageCreated {
       id
@@ -108,7 +108,7 @@ export default {
     }));
     onCreateMessageDone(() => (createMessageState.value = ""));
 
-    const { result: onMessageCreated } = useSubscription(ON_MESSAGECREATED);
+    const { result: onMessageCreated } = useSubscription(ON_MESSAGE_CREATED);
 
     watch(
       onMessageCreated,
