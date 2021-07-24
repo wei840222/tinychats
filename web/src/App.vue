@@ -3,7 +3,7 @@ router-view
 </template>
 
 <script>
-import { provide, computed } from "vue";
+import { provide } from "vue";
 import { useRouter } from "vue-router";
 import {
   ApolloClient,
@@ -37,18 +37,16 @@ export default {
       });
     }
 
-    const accessToken = computed(() => {
-      if (process.env.NODE_ENV !== "production") {
-        return process.env.VUE_APP_ACCESS_TOKEN;
-      }
-      return liff.isLoggedIn() ? liff.getAccessToken() : null;
-    });
-
     const authMiddleware = new ApolloLink((operation, forward) => {
       operation.setContext(({ headers = {} }) => ({
         headers: {
           ...headers,
-          Authorization: accessToken.value,
+          Authorization:
+            process.env.NODE_ENV !== "production"
+              ? process.env.VUE_APP_ACCESS_TOKEN
+              : liff.isLoggedIn()
+              ? liff.getAccessToken()
+              : null,
         },
       }));
       return forward(operation);
