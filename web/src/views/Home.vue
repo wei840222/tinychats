@@ -2,13 +2,13 @@
 van-loading(v-if="currentUserLoading || listMessagesLoading ", style="text-align: center; margin-top: 10px") Loading...
 van-cell(v-else, v-for="(msg, i) in messages", :key="msg.id")
   template(#title)
-    van-badge(:content="msg.user.name" color="#1989fa" style="width: max-content; left: 0px; top: 3px;")
-      van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round)
+    van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round @click="onImageClicked(msg.user.avatarUrl)")
+    van-tag(plain type="success" style="margin-left: 5px;") {{ msg.user.name }}
   | {{ msg.text }}
 van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id")
   template(#title)
-    van-badge(:content="msg.user.name" color="#1989fa" style="width: max-content; left: 0px; top: 3px;")
-      van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round)
+    van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round @click="onImageClicked(msg.user.avatarUrl)")
+    van-tag(plain type="success" style="margin-left: 5px;") {{ msg.user.name }}
   | {{ msg.text }}
 #message-end(style="margin-bottom: 60px;")
 van-field.fixedbutton(v-model="createMessageState" size="small" placeholder="please input message")
@@ -26,6 +26,7 @@ import {
 } from "@vue/apollo-composable";
 import gql from "graphql-tag";
 import jump from "jump.js";
+import { ImagePreview } from "vant";
 
 const CURRENT_USER = gql`
   query currentUser {
@@ -123,6 +124,12 @@ export default {
 
     onListMessages(() => jump(window.innerHeight));
 
+    const onImageClicked = (url) =>
+      ImagePreview({
+        images: [url],
+        closeable: true,
+      });
+
     return {
       currentUserLoading,
       listMessagesLoading,
@@ -131,6 +138,7 @@ export default {
       createMessageState,
       createMessage,
       createMessageLoading,
+      onImageClicked,
     };
   },
 };
@@ -138,7 +146,7 @@ export default {
 
 <style lang="sass" scoped>
 .fixedbutton
-    position: fixed
-    bottom: 0px
-    right: 0px
+  position: fixed
+  bottom: 0px
+  right: 0px
 </style>
