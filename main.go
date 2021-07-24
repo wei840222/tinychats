@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/websocket"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -115,7 +116,11 @@ func main() {
 	gqlHandler.Use(extension.AutomaticPersistedQuery{Cache: lru.New(100)})
 
 	m := http.NewServeMux()
-	m.Handle("/", http.FileServer(http.FS(public)))
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Vary", "Accept-Encoding")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		gziphandler.GzipHandler(http.FileServer(http.FS(public))).ServeHTTP(w, r)
+	})
 	m.Handle("/playground", playground.Handler("GraphQL Playground", "/graphql"))
 	m.Handle("/graphql", gqlHandler)
 
