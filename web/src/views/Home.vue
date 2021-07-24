@@ -1,11 +1,19 @@
 <template lang="pug">
 van-loading(v-if="currentUserLoading || listMessagesLoading ", style="text-align: center; margin-top: 10px") Loading...
-van-cell(v-else, v-for="(msg, i) in messages", :key="msg.id", :title="msg.text")
-van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id", :title="msg.text")
-#message-end
-van-field.fixedbutton(v-model="createMessageState")
+van-cell(v-else, v-for="(msg, i) in messages", :key="msg.id")
+  template(#title)
+    van-badge(:content="msg.user.name" color="#1989fa")
+      van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round)
+  | {{ msg.text }}
+van-cell(v-for="(msg, i) in messagesCreated", :key="msg.id")
+  template(#title)
+    van-badge(:content="msg.user.name" color="#1989fa")
+      van-image(:src="msg.user.avatarUrl" width="30px" height="30px" round)
+  | {{ msg.text }}
+#message-end(style="margin-bottom: 60px;")
+van-field.fixedbutton(v-model="createMessageState" size="small")
   template(#button)
-    van-button(size="small", :loading="createMessageLoading" @click="createMessage") send
+    van-button(size="small" icon="comment-o" :loading="createMessageLoading" @click="createMessage") Send
 </template>
 
 <script>
