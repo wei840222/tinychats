@@ -116,12 +116,8 @@ func main() {
 	gqlHandler.Use(extension.AutomaticPersistedQuery{Cache: lru.New(100)})
 
 	m := http.NewServeMux()
-	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Vary", "Accept-Encoding")
-		w.Header().Set("Cache-Control", "public, max-age=86400")
-		gziphandler.GzipHandler(http.FileServer(http.FS(public))).ServeHTTP(w, r)
-	})
-	m.Handle("/playground", playground.Handler("GraphQL Playground", "/graphql"))
+	m.Handle("/", pkg.NewCacheControl(http.FileServer(http.FS(public)), 86400))
+	m.Handle("/playground", pkg.NewCacheControl(playground.Handler("GraphQL Playground", "/graphql"), 2592000))
 	m.Handle("/graphql", gqlHandler)
 
 	lineLoginClient, err := line_login_sdk.New(lineChannelID, lineChannelSecret)
@@ -133,7 +129,7 @@ func main() {
 		Handler(
 			pkg.NewAccessLogMiddleware(
 				pkg.NewRecoveryMiddleware(
-					pkg.NewLINELoginMiddleware(m, lineLoginClient),
+					pkg.NewLINELoginMiddleware(gziphandler.GzipHandler(m), lineLoginClient),
 				),
 			),
 		),

@@ -111,3 +111,13 @@ func GetLINELoginUserForContext(ctx context.Context) (*line_login_sdk.GetUserPro
 	}
 	return lineLoginUser, nil
 }
+
+func NewCacheControl(next http.Handler, maxAge int) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			w.Header().Set("Vary", "Accept-Encoding")
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
+		}
+		next.ServeHTTP(w, r)
+	})
+}
