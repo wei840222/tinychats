@@ -7,8 +7,9 @@ van-field(v-model="createMessageState")
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { useQuery, useResult, useMutation } from "@vue/apollo-composable";
+import { useSubscription } from "@vue/apollo-composable";
 import gql from "graphql-tag";
 
 const CURRENT_USER = gql`
@@ -51,6 +52,21 @@ const CREATE_MESSAGE = gql`
   }
 `;
 
+const ON_MESSAGECREATED = gql`
+  subscription onMessageCreated {
+    messageCreated {
+      id
+      text
+      createdAt
+      user {
+        id
+        name
+        avatarUrl
+      }
+    }
+  }
+`;
+
 export default {
   name: "Home",
   setup() {
@@ -76,6 +92,19 @@ export default {
       },
     }));
     onCreateMessageDone(() => (createMessageState.value = ""));
+
+    const { result: onMessageCreated } = useSubscription(ON_MESSAGECREATED);
+
+    watch(
+      onMessageCreated,
+      (data) => {
+        console.log("New message received:", data.messageCreated);
+      },
+      {
+        lazy: true,
+      }
+    );
+
     return {
       currentUserLoading,
       listMessagesLoading,
