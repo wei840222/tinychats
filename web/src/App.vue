@@ -26,9 +26,13 @@ export default {
     if (process.env.NODE_ENV === "production") {
       liff.init({ liffId: "1656247924-eX5ZOvN0" }).then(() => {
         if (!liff.isLoggedIn()) {
+          window.localStorage.setItem("liffRefresh", "true");
           liff.login();
         } else {
-          router.go();
+          if (window.localStorage.getItem("liffRefresh") === "true") {
+            window.localStorage.removeItem("liffRefresh");
+            router.go();
+          }
         }
       });
     }
