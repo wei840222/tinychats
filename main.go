@@ -89,7 +89,7 @@ func main() {
 					Logger:             log,
 					UserClient:         proto.NewUserClient(grpcC),
 					MessageClient:      proto.NewMessageClient(grpcC),
-					MessageCreatedChan: make(chan *model.Message, 100),
+					MessageCreatedChan: make(chan *model.Message),
 				},
 			}),
 	))

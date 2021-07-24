@@ -40,6 +40,16 @@ func (o *responseObserver) WriteHeader(code int) {
 func NewAccessLogMiddleware(next http.Handler) http.Handler {
 	log := ZapLogger()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Connection") == "Upgrade" {
+			log.Info(
+				fmt.Sprintf("connection upgrade: %s", r.Header.Get("Upgrade")),
+				zap.String("system", "http"),
+				zap.String("http.method", r.Method),
+				zap.String("http.path", r.URL.Path),
+			)
+			next.ServeHTTP(w, r)
+			return
+		}
 		now := time.Now()
 		o := &responseObserver{ResponseWriter: w}
 		next.ServeHTTP(o, r)
