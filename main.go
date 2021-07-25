@@ -78,22 +78,24 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	m := http.NewServeMux()
-	m.Handle("/", pkg.NewCacheControlMiddleware(86400)(http.FileServer(http.FS(public))))
-	m.Handle("/playground", pkg.NewCacheControlMiddleware(2592000)(playground.Handler("GraphQL Playground", "/graphql")))
-	m.Handle("/graphql", graph.NewGraphQLHandler(proto.NewUserClient(grpcC), proto.NewMessageClient(grpcC)))
-
 	lineLoginClient, err := line_login_sdk.New(lineChannelID, lineChannelSecret)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
+	m := http.NewServeMux()
+	m.Handle("/", pkg.NewCacheControlMiddleware(86400)(http.FileServer(http.FS(public))))
+	m.Handle("/playground", pkg.NewCacheControlMiddleware(2592000)(playground.Handler("GraphQL Playground", "/graphql")))
+	m.Handle("/graphql", pkg.NewMiddlewareChain(
+		graph.NewGraphQLHandler(proto.NewUserClient(grpcC), proto.NewMessageClient(grpcC)),
+		cors.AllowAll().Handler,
+		pkg.NewLINELoginMiddleware(lineLoginClient),
+	))
+
 	httpS := &http.Server{
 		Handler: pkg.NewMiddlewareChain(m,
 			pkg.NewAccessLogMiddleware,
 			pkg.NewRecoveryMiddleware,
-			cors.AllowAll().Handler,
-			pkg.NewLINELoginMiddleware(lineLoginClient),
 			gziphandler.GzipHandler,
 		),
 	}

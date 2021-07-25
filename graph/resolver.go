@@ -63,7 +63,7 @@ func NewGraphQLHandler(userClient proto.UserClient, messageClient proto.MessageC
 	return newGraphQDataloadersMiddleware(userClient)(gqlHandler)
 }
 
-var dataloadersCtxKey = struct{}{}
+var dataloadersCtxKey = &pkg.ContextKey{Name: "DATALOADERS"}
 
 type dataloaders struct {
 	userLoader *UserLoader
