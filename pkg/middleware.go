@@ -27,6 +27,10 @@ func NewMiddlewareChain(handler http.Handler, middlewares ...Middleware) http.Ha
 	return handler
 }
 
+type ContextKey struct {
+	Name string
+}
+
 type responseObserver struct {
 	http.ResponseWriter
 	status      int
@@ -106,7 +110,7 @@ func NewCacheControlMiddleware(maxAge int) Middleware {
 	}
 }
 
-var lineLoginUserCtxKey = struct{}{}
+var lineLoginUserCtxKey = &ContextKey{Name: "LINE_LOGIN_USER"}
 
 func NewLINELoginMiddleware(lineLoginClient *line_login_sdk.Client) Middleware {
 	return func(next http.Handler) http.Handler {
