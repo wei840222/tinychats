@@ -39,11 +39,11 @@ func (r *mutationResolver) CreateMessage(ctx context.Context, input model.NewMes
 		return nil, err
 	}
 	newMessage := model.Message{
-		ID:        strconv.Itoa(int(res.GetId())),
-		Text:      input.Text,
-		CreatedAt: res.GetCreatedAt().AsTime().Format(time.RFC3339),
+		ID:        strconv.Itoa(int(res.GetMessage().GetId())),
+		Text:      res.GetMessage().GetText(),
+		CreatedAt: res.GetMessage().GetCreatedAt().AsTime().Format(time.RFC3339),
 		User: &model.User{
-			ID: user.UserID,
+			ID: res.GetMessage().GetUserId(),
 		},
 	}
 

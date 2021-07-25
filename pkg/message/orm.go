@@ -6,6 +6,7 @@ import (
 
 type Message struct {
 	gorm.Model
-	UserID string
-	Text   string
+	ChannelID int64 `gorm:"index"`
+	UserID    string
+	Text      string
 }

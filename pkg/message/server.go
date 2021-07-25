@@ -24,28 +24,37 @@ type server struct {
 
 func (s server) CreateMessage(ctx context.Context, req *proto.CreateMessageRequest) (*proto.CreateMessageResponse, error) {
 	newMessage := Message{
-		UserID: req.GetUserId(),
-		Text:   req.GetText(),
+		ChannelID: req.GetChannelId(),
+		UserID:    req.GetUserId(),
+		Text:      req.GetText(),
 	}
 	if err := s.db.WithContext(ctx).
 		Create(&newMessage).Error; err != nil {
 		return nil, err
 	}
 	return &proto.CreateMessageResponse{
-		Id:        int64(newMessage.ID),
-		CreatedAt: timestamppb.New(newMessage.CreatedAt),
+		Message: &proto.MessageResponse{
+			Id:        int64(newMessage.ID),
+			ChannelId: newMessage.ChannelID,
+			UserId:    newMessage.UserID,
+			Text:      newMessage.Text,
+			CreatedAt: timestamppb.New(newMessage.CreatedAt),
+		},
 	}, nil
 }
 
-func (s server) ListMessages(ctx context.Context, _ *proto.ListMessagesRequest) (*proto.ListMessagesResponse, error) {
+func (s server) ListMessages(ctx context.Context, req *proto.ListMessagesRequest) (*proto.ListMessagesResponse, error) {
 	var messages []*Message
-	if err := s.db.WithContext(ctx).Find(&messages).Error; err != nil {
+	if err := s.db.WithContext(ctx).
+		Where("channel_id = ?", req.GetChannelId()).
+		Find(&messages).Error; err != nil {
 		return nil, err
 	}
 	var res proto.ListMessagesResponse
 	for _, message := range messages {
 		res.Messages = append(res.Messages, &proto.MessageResponse{
 			Id:        int64(message.ID),
+			ChannelId: message.ChannelID,
 			UserId:    message.UserID,
 			Text:      message.Text,
 			CreatedAt: timestamppb.New(message.CreatedAt),

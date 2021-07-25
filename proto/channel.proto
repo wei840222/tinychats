@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option go_package = "github.com/wei840222/tinychats/proto";
+option java_multiple_files = true;
+option java_package = "com.github.wei840222.tinychats.proto";
+option java_outer_classname = "ChannelProto";
+
+package com.github.wei840222.tinychats.proto;
+
+service Channel {
+    rpc CreateChannel (CreateChannelRequest) returns (CreateChannelResponse) {}
+    rpc ListChannels (ListChannelsRequest) returns (ListChannelsResponse) {}
+}
+
+message ChannelResponse {
+    int64 id = 1;
+    string name = 2;
+}
+
+message CreateChannelRequest {
+    string name = 1;
+}
+
+message CreateChannelResponse {
+    ChannelResponse channel = 1;
+}
+
+message ListChannelsRequest {
+
+}
+
+message ListChannelsResponse {
+    repeated ChannelResponse channels = 1;
+}
